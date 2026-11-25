@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Portal</title>
+<script src="/uv/uv.bundle.js"></script>
+<script src="/uv/uv.config.js"></script>
+<script type="importmap">
+{ "imports": { "@mercuryworkshop/bare-mux": "/baremux/index.mjs" } }
+</script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+         background: #101014; color: #eee; font: 16px/1.5 -apple-system, system-ui, sans-serif; padding: 24px; }
+  h1 { font-size: 22px; font-weight: 600; text-align: center; margin: 0 0 18px; letter-spacing: .5px; }
+  form { display: flex; gap: 8px; width: min(560px, 100%); }
+  input { flex: 1; padding: 14px 16px; border-radius: 10px; border: 1px solid #2c2c34;
+          background: #17171c; color: #fff; font-size: 16px; outline: none; }
+  input:focus { border-color: #ffdf2e; }
+  button { padding: 14px 20px; border-radius: 10px; border: 0; background: #ffdf2e;
+           color: #101014; font-weight: 700; font-size: 15px; }
+  #status { text-align: center; font-size: 13px; color: #6c6c78; margin-top: 14px; min-height: 18px; }
+</style>
+</head>
+<body>
+<div>
+  <h1>Portal</h1>
+  <form id="f">
+    <input id="q" placeholder="Search or paste a URL" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" autofocus>
+    <button type="submit">Go</button>
+  </form>
+  <div id="status">booting...</div>
+</div>
+<script type="module">
+import { BareMuxConnection } from "@mercuryworkshop/bare-mux";
+
+const status = document.getElementById("status");
+const wispUrl = location.origin.replace(/^http/, "ws") + "/wisp/";
+
+try {
+  const conn = new BareMuxConnection("/baremux/worker.js");
+  const reg = await navigator.serviceWorker.register("/uv/sw.js", { scope: __uv$config.prefix });
+  // navigator.serviceWorker.ready never settles here: "/" is outside the worker's scope.
+  if (!reg.active) {
+    await new Promise((resolve) => {
+      const sw = reg.installing || reg.waiting;
+      if (!sw) return resolve();
+      sw.addEventListener("statechange", () => sw.state === "activated" && resolve());
+    });
+  }
+  await conn.setTransport("/epoxy/index.mjs", [{ wisp: wispUrl }]);
+  status.textContent = "ready";
+} catch (e) {
+  status.textContent = "error: " + e.message;
+}
+
+document.getElementById("f").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const raw = document.getElementById("q").value.trim();
+  if (!raw) return;
+  const isUrl = /^[a-z]+:\/\//i.test(raw) || (/^[\w-]+(\.[\w-]+)+(\/|$)/.test(raw) && !raw.includes(" "));
+  const url = isUrl ? (raw.includes("://") ? raw : "https://" + raw) : "https://duckduckgo.com/?q=" + encodeURIComponent(raw);
+  location.href = __uv$config.prefix + __uv$config.encodeUrl(url);
+});
+</script>
+</body>
+</html>

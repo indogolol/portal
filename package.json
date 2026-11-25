@@ -1,0 +1,20 @@
+{
+  "name": "portal",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "postinstall": "node setup.js"
+  },
+  "dependencies": {
+    "@mercuryworkshop/bare-mux": "^2.1.0",
+    "@mercuryworkshop/epoxy-transport": "^2.1.29",
+    "@mercuryworkshop/wisp-js": "^0.4.0",
+    "@titaniumnetwork-dev/ultraviolet": "^3.2.0",
+    "express": "^4.19.2"
+  }
+}
